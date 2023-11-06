@@ -51,6 +51,7 @@ Do you want to continue? [y/N]
 ```
 #### You can specify output path with provide `-o argument`, if it is a directory, the output file will be directory+date.img, if it is a .img ending file, the output file will be the file.
 
+**If you are using the FAT32 file system, you may encounter issues with backup sizes exceeding 4GB.**
 ```bash
 root@rock-5a:/home/radxa# ./rockpi-backup.sh -o /mnt/backup
 Welcome to rockpi-backup.sh, part of the ROCK Pi toolkit.
@@ -67,6 +68,16 @@ After this operation, 5392 MB of additional disk space will be used.
 Do you want to continue? [y/N] 
 ```
 #### You can specify the root mount path with -m mount-point, and it will back up the specified mount point system.
+
+
+It can back up your system offline, without the need to back up while the system is running, which can avoid some unforeseen errors. Of course, you can directly use dd for a full disk backup, but using our tool can reduce the backup size and automatically expand after recovery, eliminating the need for manual operations.
+
+How to use:
+Connect your system media to a Linux system, locate your device, find the root partition, mount it to any location, and execute the command `rockpi-backup.sh -m your_mount_point` to perform the backup.
+
+This operation may require some basic computer knowledge, and you might need to use it under the guidance of a professional.
+
+Other: If your package manager is not apt, you may need to manually install the packages that are prompted as missing.
 
 ### Tips
 

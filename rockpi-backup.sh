@@ -299,7 +299,6 @@ backup_image() {
     --exclude $MOUNT_POINT/sys \
     --exclude $MOUNT_POINT/tmp \
     --exclude lost+found \
-    --exclude $MOUNT_POINT/var/log \
     $MOUNT_POINT/ $ROOT_MOUNT
 
   # special dirs
