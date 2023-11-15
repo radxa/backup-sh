@@ -291,13 +291,13 @@ backup_image() {
   rsync --force -rltWDEHSgop --delete --stats --progress $_exclude $exclude \
     --exclude "$output" \
     --exclude .gvfs \
-    --exclude $MOUNT_POINT/dev \
-    --exclude $MOUNT_POINT/media \
-    --exclude $MOUNT_POINT/mnt \
-    --exclude $MOUNT_POINT/proc \
-    --exclude $MOUNT_POINT/run \
-    --exclude $MOUNT_POINT/sys \
-    --exclude $MOUNT_POINT/tmp \
+    --exclude /dev \
+    --exclude /media \
+    --exclude /mnt \
+    --exclude /proc \
+    --exclude /run \
+    --exclude /sys \
+    --exclude /tmp \
     --exclude lost+found \
     $MOUNT_POINT/ $ROOT_MOUNT
 
