@@ -162,7 +162,7 @@ install_tools() {
   fi
 }
 
-gen_image_file() {
+gen_image_size() {
   if [ "$output" == "" ]; then
     output="${PWD}/${model}-backup-$(date +%y%m%d-%H%M).img"
   else
@@ -179,7 +179,7 @@ gen_image_file() {
   rootfs_size=$(df -B512 $MOUNT_POINT | awk 'NR == 2{print $3}')
   backup_size=$(expr $rootfs_size +  $rootfs_start + 40 + 1000000 )
 
-  dd if=/dev/zero of=${output} bs=512 count=0 seek=$backup_size status=none
+  
 }
 
 
@@ -244,21 +244,11 @@ rebuild_root_partition() {
   echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output
 }
 
-exclude_mounted_part() {
-  # The other parts have been copied
-  echo Exclude mounted part...
-  _exclude=""
-  for i in `lsblk -no PATH,MOUNTPOINT | awk {'print $2'}`;
-  do
-    if [ "$i" != "$MOUNT_POINT" ] ;then
-      _exclude="$_exclude --exclude $i"
-    fi
-  done
-  echo $_exclude
-
-}
-
 backup_image() {
+
+
+  echo "Generate the base images. This might take some time."
+  dd if=/dev/zero of=${output} bs=512 count=0 seek=$backup_size status=progress
 
   echo "Copy other partition"
   dd if=$device of=$output bs=512 seek=0 count=$(expr $rootfs_start - 1) status=progress conv=notrunc
@@ -283,12 +273,10 @@ backup_image() {
 
 
 
-  exclude_mounted_part
-
   echo Start rsync...
 
 
-  rsync --force -rltWDEHSgop --delete --stats --progress $_exclude $exclude \
+  rsync --force -rltWDEHSgopAXx --delete --stats --progress $exclude \
     --exclude "$output" \
     --exclude .gvfs \
     --exclude /dev \
@@ -343,12 +331,12 @@ main() {
   echo '--------------------'
   install_tools
   check_part
-  gen_image_file
+  gen_image_size
   check_avail_space
 
   printf "The backup file will be saved at %s\n" "$output"
   printf "After this operation, %s MB of additional disk space will be used.\n" "$(expr $backup_size / 2048)"
-  confirm "Do you want to continue?" "clean" "$output"
+  confirm "Do you want to continue?" "abort" 
   create_service
   backup_image
 }
