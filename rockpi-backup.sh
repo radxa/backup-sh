@@ -194,7 +194,6 @@ check_avail_space() {
   done
 
   if [ $(expr ${store_size} - ${backup_size}) -lt 64 ]; then
-    rm ${output}
     echo -e "No space left on ${output_}\nAborted.\n"
     exit 1
   fi
