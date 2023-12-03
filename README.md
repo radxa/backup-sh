@@ -7,7 +7,7 @@ Welcome to rockpi-toolkit, the repository will collect tools that can be used on
 
 ## 1. rockpi-backup.sh
 
-This script allows you to back up your system using Rock. It is currently possible to back up each other between uSD and eMMC. I haven't tested it on NVMe, because I don't have it yet.
+This script allows you to back up your system using Rock.
 
 _It may work for unofficial systems, but we do not provide any technical support._
 
@@ -82,5 +82,7 @@ Other: If your package manager is not apt, you may need to manually install the 
 ### Tips
 
 1. If you want to use dd to restore your image, and your uSD or eMMC has GPT partitions and is mounted, please umount before dd.
-
 2. The script only supports GPT disk type and the ext4 file system for the root, and it assumes that the root partition is the largest partition on the disk.
+3. If you are using external storage, we strongly recommend that you format it to ext4 or another file system that is natively supported by Linux. If you use an exFAT file system, the process may take longer due to the lack of support for sparse files, which can affect efficiency and storage space utilization.
+4. Although the files you have excluded will be accounted for in the total size calculation of the final image, they will not be copied during the backup process. This approach will result in a larger size for the backup image, but it will not have any other additional effects.
+5. If you use the exclude command, the rules for exclusion are identical to those used in rsync. Essentially, we are just mapping the exclusion process straightforwardly onto the rsync command.
