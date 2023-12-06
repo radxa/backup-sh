@@ -274,7 +274,7 @@ backup_image() {
 
   echo Start rsync...
 
-  rsync --force -rltWDEHSgopAXx --delete --stats --progress $exclude \
+  rsync --force -rltWDEHSgopAXx --delete --stats --info=progress2 $exclude \
     --exclude "$output" \
     --exclude .gvfs \
     --exclude /dev \
