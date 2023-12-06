@@ -12,6 +12,7 @@ GROW_SCRIPT=/usr/local/bin/growpart-by-backup.sh
 GROW_SERVER_NAME=growpart-by-backup
 GROW_SERVER=/etc/systemd/system/$GROW_SERVER_NAME.service
 
+
 check_root() {
   if [ $(id -u) != 0 ]; then
     echo -e "${SCRIPT_NAME} needs to be run as root.\n"
@@ -99,6 +100,7 @@ check_part() {
   fi
 }
 
+
 create_service(){
   echo Create service...
     echo "[Unit]
@@ -136,8 +138,8 @@ systemctl disable $GROW_SERVER_NAME
 " > $MOUNT_POINT$GROW_SCRIPT
 
   chmod +x $MOUNT_POINT$GROW_SCRIPT
-
 }
+
 
 install_tools() {
   commands="rsync parted gdisk fdisk kpartx tune2fs losetup "
@@ -162,6 +164,7 @@ install_tools() {
   fi
 }
 
+
 gen_image_size() {
   if [ "$output" == "" ]; then
     output="${PWD}/${model}-backup-$(date +%y%m%d-%H%M).img"
@@ -178,8 +181,6 @@ gen_image_size() {
 
   rootfs_size=$(df -B512 $MOUNT_POINT | awk 'NR == 2{print $3}')
   backup_size=$(expr $rootfs_size +  $rootfs_start + 40 + 1000000 )
-
-  
 }
 
 
@@ -200,6 +201,7 @@ check_avail_space() {
 
   return 0
 }
+
 
 rebuild_root_partition() {
   echo rebuild root partition...
@@ -230,8 +232,8 @@ rebuild_root_partition() {
   flag_str=""
   local t=0
   echo flags $attribute_flags
-  while [ $attribute_flags -ne 0 ]
-  do
+
+  while [ $attribute_flags -ne 0 ]; do
     echo $attribute_flags
     if (( (attribute_flags & 1) != 0 )); then
       flag_str="$flag_str$t\n"
@@ -239,13 +241,13 @@ rebuild_root_partition() {
     (( attribute_flags = attribute_flags >> 1 )) || true
     (( t = t + 1))
   done
+
   echo "x\na\n$device_part_num\n$flag_str\nw\ny\n"
   echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output
 }
 
+
 backup_image() {
-
-
   echo "Generate the base images. This might take some time."
   dd if=/dev/zero of=${output} bs=512 count=0 seek=$backup_size status=progress
 
@@ -270,10 +272,7 @@ backup_image() {
 
   mount $loop_root_dev $ROOT_MOUNT
 
-
-
   echo Start rsync...
-
 
   rsync --force -rltWDEHSgopAXx --delete --stats --progress $exclude \
     --exclude "$output" \
@@ -335,7 +334,7 @@ main() {
 
   printf "The backup file will be saved at %s\n" "$output"
   printf "After this operation, %s MB of additional disk space will be used.\n" "$(expr $backup_size / 2048)"
-  confirm "Do you want to continue?" "abort" 
+  confirm "Do you want to continue?" "abort"
   create_service
   backup_image
 }
