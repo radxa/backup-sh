@@ -288,16 +288,13 @@ backup_image() {
     $MOUNT_POINT/ $ROOT_MOUNT
 
   # special dirs
-  for i in dev media mnt proc run sys; do
+  for i in dev media mnt proc run sys tmp; do
     if [ ! -d $ROOT_MOUNT/$i ]; then
       mkdir $ROOT_MOUNT/$i
     fi
   done
 
-  if [ ! -d $ROOT_MOUNT/tmp ]; then
-    mkdir $ROOT_MOUNT/tmp
-    chmod a+w $ROOT_MOUNT/tmp
-  fi
+  chmod a+w $ROOT_MOUNT/tmp
 
   sync
   umount $ROOT_MOUNT && rm -rf $ROOT_MOUNT
