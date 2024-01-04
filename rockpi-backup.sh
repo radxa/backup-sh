@@ -1,4 +1,5 @@
 #!/bin/bash
+LANGUAGE=en
 set -e
 SCRIPT_NAME=$(basename $0)
 ROOT_MOUNT=$(mktemp -d)
