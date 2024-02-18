@@ -208,7 +208,7 @@ rebuild_root_partition() {
   echo Rebuild root partition...
 
   echo Delete inappropriate partition and fix
-  echo -e "d\n$device_part_num\nw\ny" | gdisk $output > /dev/null 2> /dev/null
+  echo -e "d\n$device_part_num\nw\ny" | gdisk $output > /dev/null 2>&1
 
   # get partition infomations
   local type=`echo -e "x\ni\n$device_part_num\n" | gdisk $device |grep "Partition GUID code:"| awk '{print $12}'`
@@ -218,16 +218,16 @@ rebuild_root_partition() {
   local partition_name=${_partition_name:1:-1}
 
   echo Create new root partition...
-  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
+  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $output > /dev/null 2>&1
 
   echo Change part GUID
-  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
+  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $output > /dev/null 2>&1
 
   echo Change part Label
-  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
+  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $output > /dev/null 2>&1
 
   echo Change part type
-  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
+  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $output > /dev/null 2>&1
 
   echo Change attribute_flag
   flag_str=""
@@ -241,7 +241,7 @@ rebuild_root_partition() {
     (( attribute_flags = attribute_flags >> 1 )) || true
     (( t = t + 1))
   done
-  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output 2>/dev/null >/dev/null
+  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output > /dev/null 2>&1
 }
 
 
@@ -262,11 +262,11 @@ backup_image() {
   loop_root_dev=${mapdevice}p$device_part_num
 
   echo Format root partition...
-  mkfs.ext4 $loop_root_dev 2>/dev/null >/dev/null
+  mkfs.ext4 $loop_root_dev > /dev/null 2>&1
 
-  e2fsck -f -y $loop_root_dev 2>/dev/null >/dev/null
+  e2fsck -f -y $loop_root_dev > /dev/null 2>&1
 
-  echo y | tune2fs -U `lsblk $device_part -no UUID` $loop_root_dev >/dev/null
+  echo y | tune2fs -U `lsblk $device_part -no UUID` $loop_root_dev > /dev/null
 
   echo Mounting...
   mount $loop_root_dev $ROOT_MOUNT
