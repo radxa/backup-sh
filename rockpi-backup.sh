@@ -205,10 +205,10 @@ check_avail_space() {
 
 
 rebuild_root_partition() {
-  echo rebuild root partition...
+  echo Rebuild root partition...
 
   echo Delete inappropriate partition and fix
-  echo -e "d\n$device_part_num\nw\ny" | gdisk $output > /dev/null
+  echo -e "d\n$device_part_num\nw\ny" | gdisk $output > /dev/null 2> /dev/null
 
   # get partition infomations
   local type=`echo -e "x\ni\n$device_part_num\n" | gdisk $device |grep "Partition GUID code:"| awk '{print $12}'`
@@ -217,22 +217,21 @@ rebuild_root_partition() {
   local _partition_name=`echo -e "x\ni\n$device_part_num\n" | gdisk $device |grep "Partition name:"| awk '{print $3}'`
   local partition_name=${_partition_name:1:-1}
 
-  echo Create new root partition
-  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $output > /dev/null
+  echo Create new root partition...
+  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
 
   echo Change part GUID
-  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $output > /dev/null
+  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
 
   echo Change part Label
-  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $output > /dev/null
+  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
 
   echo Change part type
-  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $output > /dev/null
+  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $output 2> /dev/null > /dev/null
 
   echo Change attribute_flag
   flag_str=""
   local t=0
-  echo flags $attribute_flags
 
   while [ $attribute_flags -ne 0 ]; do
     echo $attribute_flags
@@ -242,9 +241,7 @@ rebuild_root_partition() {
     (( attribute_flags = attribute_flags >> 1 )) || true
     (( t = t + 1))
   done
-
-  echo "x\na\n$device_part_num\n$flag_str\nw\ny\n"
-  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output
+  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output 2>/dev/null >/dev/null
 }
 
 
@@ -264,13 +261,14 @@ backup_image() {
 
   loop_root_dev=${mapdevice}p$device_part_num
 
-  echo format root partition...
-  mkfs.ext4 $loop_root_dev
+  echo Format root partition...
+  mkfs.ext4 $loop_root_dev 2>/dev/null >/dev/null
 
-  e2fsck -f $loop_root_dev
+  e2fsck -f -y $loop_root_dev 2>/dev/null >/dev/null
 
-  tune2fs -U `lsblk $device_part -no UUID` $loop_root_dev
+  echo y | tune2fs -U `lsblk $device_part -no UUID` $loop_root_dev >/dev/null
 
+  echo Mounting...
   mount $loop_root_dev $ROOT_MOUNT
 
   echo Start rsync...
@@ -287,7 +285,7 @@ backup_image() {
     --exclude /tmp \
     --exclude lost+found \
     $MOUNT_POINT/ $ROOT_MOUNT
-
+  local result=$?
   # special dirs
   for i in dev media mnt proc run sys tmp; do
     if [ ! -d $ROOT_MOUNT/$i ]; then
@@ -303,6 +301,10 @@ backup_image() {
   kpartx -d $loopdevice
 
   rm $MOUNT_POINT/etc/systemd/system/multi-user.target.wants/$GROW_SERVER_NAME.service
+
+  if [ $result -ne 0 ];then
+    echo Warning: There may be issues during the execution of rsync, and the image may fail to start.
+  fi
 
   echo -e "\nBackup done, the file is ${output}"
 }
