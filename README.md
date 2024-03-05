@@ -1,4 +1,4 @@
-> **note**
+> ![NOTE]
 > Please visit https://github.com/radxa/backup-sh
 
 # Rockpi-toolkit
@@ -14,6 +14,7 @@ _It may work for unofficial systems, but we do not provide any technical support
 ### Install
 
 ```bash
+linaro@rockpi:~ $ sudo apt install cloud-guest-utils # For auto-expanding the image
 linaro@rockpi:~ $ curl -sL https://rock.sh/rockpi-backup -o rockpi-backup.sh
 linaro@rockpi:~ $ chmod +x rockpi-backup.sh
 ```
