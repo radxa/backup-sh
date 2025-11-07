@@ -132,7 +132,7 @@ ROOT_DEV=\`lsblk -no PATH,MOUNTPOINT | grep \"/$\" | awk '{print \$1}'\`
 # fix disk size
 echo w | fdisk \$ROOT_PART
 
-echo -e \"resizepart \$ROOT_PART_NO 100%\ny\" | parted ---pretend-input-tty \$ROOT_PART
+growpart \$ROOT_PART \$ROOT_PART_NO
 
 # ext4 part only
 resize2fs \$ROOT_DEV
