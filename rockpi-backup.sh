@@ -99,6 +99,9 @@ check_part() {
     echo "Only supports ext4 fstype."
     exit -1
   fi
+
+  SECTOR_SIZE=$(blockdev --getss $device)
+  echo "Detected sector size: $SECTOR_SIZE bytes"
 }
 
 
@@ -180,15 +183,16 @@ gen_image_size() {
     fi
   fi
 
-  rootfs_size=$(df -B512 $MOUNT_POINT | awk 'NR == 2{print $3}')
-  backup_size=$(expr $rootfs_size +  $rootfs_start + 40 + 1000000 )
+  rootfs_size=$(df -B${SECTOR_SIZE} $MOUNT_POINT | awk 'NR == 2{print $3}')
+  extended_size=$(expr 512000000 / ${SECTOR_SIZE})
+  backup_size=$(expr $rootfs_size + $rootfs_start + 40 + $extended_size)
 }
 
 
 check_avail_space() {
   output_=${output}
   while true; do
-    store_size=$(df -B512 | grep "$output_\$" | awk '{print $4}' | sed 's/M//g')
+    store_size=$(df -B${SECTOR_SIZE} | grep "$output_\$" | awk '{print $4}' | sed 's/M//g')
     if [ "$store_size" != "" ] || [ "$output_" == "\\" ]; then
       break
     fi
@@ -207,8 +211,10 @@ check_avail_space() {
 rebuild_root_partition() {
   echo Rebuild root partition...
 
+  local temp_loop=$(losetup -b ${SECTOR_SIZE} -f --show $output)
+
   echo Delete inappropriate partition and fix
-  echo -e "d\n$device_part_num\nw\ny" | gdisk $output > /dev/null 2>&1
+  echo -e "d\n$device_part_num\nw\ny" | gdisk $temp_loop > /dev/null 2>&1
 
   # get partition infomations
   local type=`echo -e "x\ni\n$device_part_num\n" | gdisk $device |grep "Partition GUID code:"| awk '{print $12}'`
@@ -218,16 +224,16 @@ rebuild_root_partition() {
   local partition_name=${_partition_name:1:-1}
 
   echo Create new root partition...
-  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $output > /dev/null 2>&1
+  echo -e "n\n$device_part_num\n$rootfs_start\n\n\nw\ny\n" | gdisk $temp_loop > /dev/null 2>&1
 
   echo Change part GUID
-  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $output > /dev/null 2>&1
+  echo -e "x\nc\n$device_part_num\n$guid\nw\ny\n" | gdisk $temp_loop > /dev/null 2>&1
 
   echo Change part Label
-  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $output > /dev/null 2>&1
+  echo -e "c\n$device_part_num\n$partition_name\nw\ny\n" | gdisk $temp_loop > /dev/null 2>&1
 
   echo Change part type
-  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $output > /dev/null 2>&1
+  echo -e "t\n$device_part_num\n$type\nw\ny\n" | gdisk $temp_loop > /dev/null 2>&1
 
   echo Change attribute_flag
   flag_str=""
@@ -241,21 +247,23 @@ rebuild_root_partition() {
     (( attribute_flags = attribute_flags >> 1 )) || true
     (( t = t + 1))
   done
-  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $output > /dev/null 2>&1
+  echo -e "x\na\n$device_part_num\n$flag_str\nw\ny\n" | gdisk $temp_loop > /dev/null 2>&1
+
+  losetup -d $temp_loop
 }
 
 
 backup_image() {
   echo "Generate the base images. This might take some time."
-  dd if=/dev/zero of=${output} bs=512 count=0 seek=$backup_size status=progress
+  dd if=/dev/zero of=${output} bs=${SECTOR_SIZE} count=0 seek=$backup_size status=progress
 
   echo "Copy other partition"
-  dd if=$device of=$output bs=512 seek=0 count=$(expr $rootfs_start - 1) status=progress conv=notrunc
+  dd if=$device of=$output bs=${SECTOR_SIZE} seek=0 count=$(expr $rootfs_start - 1) status=progress conv=notrunc
 
   rebuild_root_partition
 
   echo Mount loop device...
-  loopdevice=$(losetup -f --show $output)
+  loopdevice=$(losetup -b ${SECTOR_SIZE} -f --show $output)
   mapdevice="/dev/mapper/$(kpartx -va $loopdevice | sed -E 's/.*(loop[0-9]+)p.*/\1/g' | head -1)"
   sleep 2  # waiting for kpartx
 
@@ -333,7 +341,7 @@ main() {
   check_avail_space
 
   printf "The backup file will be saved at %s\n" "$output"
-  printf "After this operation, %s MB of additional disk space will be used.\n" "$(expr $backup_size / 2048)"
+  printf "After this operation, %s MB of additional disk space will be used.\n" "$(expr $backup_size \* $SECTOR_SIZE / 1048576)"
   confirm "Do you want to continue?" "abort"
   create_service
   backup_image
